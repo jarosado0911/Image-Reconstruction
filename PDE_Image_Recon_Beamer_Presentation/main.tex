@@ -1,0 +1,382 @@
+\documentclass[xcolor=dvipsnames]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{changepage}
+\usepackage{subcaption}
+\usepackage[square,numbers]{natbib}
+\bibliographystyle{abbrvnat}
+%\usepackage[backend=bibtex]{biblatex}
+%\usepackage[backend=bibtex,style=numeric,defernumbers=true]{biblatex}
+%\setbeamertemplate{bibliography item}{\insertbiblabel}
+%\bibliography{references.bib}
+%\usepackage{enumitem}
+\usepackage[export]{adjustbox}
+\usepackage{wrapfig}
+\usepackage[belowskip=2pt,aboveskip=0pt]{caption}
+\usepackage{media9}
+\usepackage{hyperref}
+\usepackage{lmodern}
+\usepackage{multimedia}
+%\usepackage{utopia} %font utopia imported
+\usepackage{listings}
+\lstloadlanguages{C,C++,csh,Java}
+
+\definecolor{red}{rgb}{0.6,0,0} 
+\definecolor{blue}{rgb}{0,0,0.6}
+\definecolor{green}{rgb}{0,0.8,0}
+\definecolor{cyan}{rgb}{0.0,0.6,0.6}
+\lstset{
+language=csh,
+basicstyle=\script\ttfamily,
+numbers=left,
+numberstyle=\tiny,
+numbersep=5pt,
+tabsize=1,
+extendedchars=true,
+breaklines=true,
+stringstyle=\color{blue}\ttfamily,
+showspaces=false,
+showtabs=false,
+xleftmargin=17pt,
+framexleftmargin=17pt,
+framexrightmargin=1pt,
+framexbottommargin=1pt,
+commentstyle=\color{green},
+morecomment=[l]{//}, %use comment-line-style!
+morecomment=[s]{/*}{*/}, %for multiline comments
+showstringspaces=false,
+morekeywords={ SubMatrix abstract, event, new, struct,
+as, explicit, null, switch,
+base, extern, object, this,
+bool, false, operator, throw,
+break, finally, out, true,
+byte, fixed, override, try,
+case, float, params, typeof,
+catch, for, private, uint,
+char, foreach, protected, ulong,
+checked, goto, public, unchecked,
+class, if, readonly, unsafe,
+const, implicit, ref, ushort,
+continue, in, return, using,
+decimal, int, sbyte, virtual,
+default, interface, sealed, volatile,
+delegate, internal, short, void,
+do, is, sizeof, while,
+double, lock, stackalloc,
+else, long, static, SetSubMatrix,
+enum, namespace, string},
+keywordstyle=\color{cyan},
+identifierstyle=\color{blue},
+backgroundcolor=\color{white}
+}
+\usetheme{Madrid}
+\usecolortheme{default}
+
+\newcommand{\CS}{\textrm{C}\nolinebreak\hspace{-.05em}\raisebox{.6ex}{\tiny\bf \#}} 
+\newcommand*{\myfont}{\fontfamily{phv}\selectfont} 
+
+%gets rid of bottom navigation bars
+\setbeamertemplate{footline}[page number]{}
+
+%gets rid of navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+%------------------------------------------------------------
+%This block of code defines the information to appear in the
+%Title page
+\title[NUMPDE] %optional
+{\textbf{PDE BASED IMAGE RECONSTRUCTION}}
+
+%\subtitle{A short story}
+
+\author[Rosado, James] % (optional)
+{\large{\textbf{James Rosado}}}
+
+\date% (optional)
+{\large{\textbf{ Numerical Partial Differential Equations\\ Spring 2020}}}
+
+%End of title page configuration block
+%------------------------------------------------------------
+
+%------------------------------------------------------------
+%The next block of commands puts the table of contents at the 
+%beginning of each section and highlights the current section:
+\titlegraphic{\vspace{0mm}\includegraphics[width=4.5cm]{Temple_University_logo.png}}
+%\AtBeginSection[]
+%{
+%  \begin{frame}
+%    \frametitle{Table of Contents}
+%    \tableofcontents[currentsection]
+%  \end{frame}
+%}
+%------------------------------------------------------------
+\definecolor{MyBackground}{RGB}{231,231,231}
+\setbeamercolor{background canvas}{bg=MyBackground}
+
+\begin{document}
+
+%The next statement creates the title page.
+
+\frame{\titlepage}
+
+
+%---------------------------------------------------------
+%This block of code is for the table of contents after
+%the title page
+
+
+\begin{frame}
+\frametitle{Table of Contents}
+{\Large
+\tableofcontents}
+\end{frame}
+
+%---------------------------------------------------------
+
+
+\section{Introduction}
+\begin{frame}{Project Goals}
+    \begin{itemize}
+        \item Implement an active contour method to delineate an image from noise.
+        \item Determine necessary parameters to improve the detection of image contours and investigate the robustness of the active contour method. 
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Project Steps}
+\begin{itemize}
+    \item Read in a raw image and process the image through Gaussian Smoothing with variance $\sigma$ \cite{osher2006level}.
+    \item Set an edge detector function $g(\cdot)$ where $\displaystyle \lim_{|\vec{z}|\rightarrow\infty}g(\vec{z})=0$ and choose parameters \cite{osher2006level}
+    \item Apply a level set method to move an active contour (a front, snake) towards the image using the image curvature and edge detector.
+\end{itemize}
+\end{frame}
+\section{Analytic Formulation}
+\begin{frame}{Active Contour Model}
+\begin{itemize}
+\item Raw image $u_0(x)$, where $x\in\Omega\subset\mathbb{R}^2$ in 2D
+    \item Active contour $C$ minimizes:
+    \begin{equation}\label{eqn1}
+F(C)=\underbrace{\alpha\int_0^1|C'(s)|^2\ ds + \beta\int_0^1|C''(s)|\ ds}_{\textrm{control smoothness}} - \underbrace{\lambda\int_0^1|\nabla u_0(C(s))|^2\ ds}_{\textrm{controls movement of $C$}}
+\end{equation}
+\item $C$ realizes the image
+\item Move $C$ using edge detector $g(\cdot)$ and curvature $\kappa$
+\item Edge Detector \cite{osher2006level}, two parameters $\gamma$ and $p$
+\begin{equation}\label{eqn2}
+    g(\nabla u_0(\Vec{x}))=\frac{1}{1+\gamma|J_\sigma\star \nabla u_0|^p}
+\end{equation}
+\item $J_\sigma$ is the Gaussian Smoothing, but why?
+\end{itemize}
+\end{frame}
+\begin{frame}{Active Contour Model}
+    \begin{itemize}
+        \item Equation (\ref{eqn1}) is equivalent to \cite{osher2006level,osti_478429} \begin{align}
+\phi_t &= |\nabla\phi|\nabla\cdot\underbrace{\left[g(\nabla u_0) \left(\frac{\nabla\phi}{|\nabla\phi|}\right)\right]}_{\textrm{generalized curvature}}\notag \\[10pt]
+&=|\nabla\phi|\left(g(\nabla u_0)\nabla\cdot\frac{\nabla\phi}{|\nabla\phi|}+\nabla g(\nabla u_0)\cdot\frac{\nabla\phi}{|\nabla\phi|} \right)\label{eqn3}\\[10pt]
+&=|\nabla\phi|\left(g(\nabla u_0)\kappa+\nabla g(\nabla u_0)\cdot\frac{\nabla\phi}{|\nabla\phi|} \right)\notag \\[10pt]
+\phi_t&=|\nabla\phi|g(\nabla u_0)\kappa+\nabla g(\nabla u_0)\cdot\nabla\phi\label{eqn4}
+\end{align}
+\item $\phi$ is the level set function
+\item $\Gamma(t)$ is the contour corresponding to $\phi(x,t)=0$, which will outline our image.
+\item Use (\ref{eqn3}) to write numerical approximation
+    \end{itemize}
+\end{frame}
+\section{Gaussian Smoothing}
+\begin{frame}{Smoothing An Image}
+\begin{itemize}
+    \item $\nabla u_0$ has order $\mathcal{O}(1/h)$ grows unbounded as $h\rightarrow 0$
+\end{itemize}
+\begin{figure}[h!]
+  \centering
+  \begin{overprint}
+  \includegraphics<1>[width=\linewidth]{d1.png}
+  \includegraphics<2>[width=\linewidth]{d2.png}
+  \includegraphics<3>[width=\linewidth]{d3.png}
+  \includegraphics<4>[width=\linewidth]{d4.png}
+    \end{overprint}
+\end{figure}
+\end{frame}
+\begin{frame}{Gaussian Smoothing}
+\begin{itemize}
+ \item Numerically solve heat equation up to time $t=\sigma$, $u_t=-\nabla^2u$
+ \item Crank-Nicolson, two dimensions analogous to LeVeque \cite{leveque2007finite} \item $h_x=h_y=h$:
+\[
+\frac{U_{i,j}^{n+1}-U_{i,j}^n}{k}=\frac{1}{2}\left(\nabla^2U_{i,j}^n+\nabla^2U_{i,j}^{n+1}\right)
+\]
+where
+\begin{align*}
+    \nabla^2U_{i,j}^n&=\frac{U_{i-1,j}^n-2U_{i,j}^n+U_{i+1,j}^n}{h^2}+\frac{U_{i,j-1}^n-2U_{i,j}^n+U_{i,j+1}^n}{h^2}\\
+    \nabla^2U_{i,j}^{n+1}&=\frac{U_{i-1,j}^{n+1}-2U_{i,j}^{n+1}+U_{i+1,j}^{n+1}}{h^2}+\frac{U_{i,j-1}^{n+1}-2U_{i,j}^{n+1}+U_{i,j+1}^{n+1}}{h^2}
+\end{align*}
+\item Constant Neumann boundary conditions
+\end{itemize}
+\end{frame}
+\begin{frame}{Gaussian Smoothing}
+\begin{figure}[h!]
+  \centering
+  \begin{overprint}
+  \includegraphics<1>[width=\linewidth]{n1.png}
+  \includegraphics<2>[width=\linewidth]{n2.png}
+  \includegraphics<3>[width=\linewidth]{n3.png}
+  \includegraphics<4>[width=\linewidth]{n4.png}
+    \end{overprint}
+\end{figure}
+\end{frame}
+\begin{frame}{Gaussian Smoothing}
+    \begin{itemize}
+        \item How are variance $\sigma$ and smoothing width $d$ related?
+        \item analytically solve heat equation, Dirac initial data:
+\[
+\begin{cases}
+u_t = -\nabla^2u & \vec{x}\in\Omega, t>0\\
+u(x,0)= \delta_0(x)
+\end{cases}
+\]
+\item Fundamental solution \cite{evans2010partial}:
+\[
+\Phi(\vec{x},t)=\frac{1}{4\pi t}e^{-|\vec{x}|^2/(4t)}
+\]
+ \item Amount of smoothing is determined by $t=\sigma>0$; therefore,
+\[
+\Phi(\vec{x},\sigma)=\frac{1}{4\pi \sigma}e^{-|\vec{x}|^2/(4\sigma)}
+\]
+    \end{itemize}
+\end{frame}
+\begin{frame}{Gaussian Smoothing}
+\begin{itemize}
+    \item Maximum when $\vec{x}=0$; therefore, $\Phi_{max}=1/(4\pi \sigma)$. \vspace{2mm}
+    \item Width of the smoothing can be given by when $\Phi$ is $5\%$ of the maximum\vspace{2mm}
+    \item solve
+\[
+0.05\cdot\frac{1}{4\pi\sigma}=\frac{1}{4\pi \sigma}e^{-d^2/(4\sigma)}
+\]
+which has solution given by $d(\sigma) = 2\sqrt{\sigma\ln(20)}$\vspace{2mm}
+\item Grid resolution $h<d$ to resolve smoothing region.\vspace{2mm}
+\item Choose $p$ and $\gamma$ such that $|\nabla g(\nabla u_0)|$ is order magnitude of $1/d$.
+\end{itemize}
+\end{frame}
+\section{Numerical Solving}
+\begin{frame}{Numerical Scheme}
+\begin{itemize}
+    \item Write out the terms for the \textit{generalized curvature} (\ref{eqn3}):
+\[
+\underbrace{A\nabla\cdot\frac{\nabla\phi}{|\nabla\phi|}}_{\textrm{Part 1}}+\underbrace{\nabla A\cdot\frac{\nabla\phi}{|\nabla\phi|}}_{\textrm{Part 2}}
+\]
+where $A = g(\nabla u_0)$
+\item Part 1 
+\begin{align*}
+    &=A\left(\partial_x\left(\frac{\phi_x}{(\phi_x^2+\phi_y^2)^{1/2}}\right)+\partial_y\left(\frac{\phi_y}{(\phi_x^2+\phi_y^2)^{1/2}}\right)\right)\\
+    &=A\left(\frac{|\nabla\phi|\phi_{xx}-\phi_x\frac{1}{|\nabla\phi|}(\phi_x\phi_{xx}+\phi_y\phi_{yx})}{|\nabla\phi|^2}+\cdots\right)\\
+    &=\frac{A}{|\nabla\phi|^3}\left(|\nabla\phi|^2\phi_{xx}-\phi_x^2\phi_{xx}-2\phi_x\phi_y\phi_{xy}-\phi_y^2\phi_{yy}+|\nabla\phi|^2\phi_{yy}\right)
+\end{align*}
+\end{itemize}
+\end{frame}
+\begin{frame}{Numerical Scheme}
+\begin{itemize}
+    \item Use central finite differences to approximate first and second derivatives
+    \item Part 2 use center differences for the gradient of $A$
+    \[
+    (A_x,A_y)\cdot\left(\frac{\phi_x}{\sqrt{\phi_x^2+\phi_y^2}^{1/2}},\frac{\phi_y}{\sqrt{\phi_x^2+\phi_y^2}^{1/2}}\right)
+    \]
+    \item Hamilton Jacobi Scheme in 2D
+    \item Level set update is FE.
+\end{itemize}
+\end{frame}
+\section{Results}
+\begin{frame}{Run \#1: Some Noise}
+\begin{figure}[h!]
+  \centering
+  \begin{overprint}
+  \includegraphics<1>[width=\linewidth]{ex1original.png}
+  \includegraphics<2>[width=\linewidth]{ex1blurred.png}
+  \includegraphics<3>[width=\linewidth]{ex1spd.png}
+    \end{overprint}
+\end{figure}
+\end{frame}
+\begin{frame}{Run \# 1: Some Noise}
+\movie[label=test,width=\linewidth, poster, showcontrols]{\includegraphics[width=\linewidth]{matlabLogo.png}}{vid1.mov}
+\begin{itemize}
+    \item $\sigma = 5.5\times 10^{-5}$, $p=8.9$, $\gamma = 5.5\times 10^{-11.25}$
+\end{itemize}
+\end{frame}
+\begin{frame}{Run \#2: More Noise, same parameters}
+    \begin{figure}[h!]
+  \centering
+  \begin{overprint}
+  \includegraphics<1>[width=\linewidth]{ex2original.png}
+  \includegraphics<2>[width=\linewidth]{ex2blurred.png}
+  \includegraphics<3>[width=\linewidth]{ex2spd.png}
+    \end{overprint}
+\end{figure}
+\end{frame}
+\begin{frame}{Run \#2: More Noise, same parameters}
+    \movie[label=test,width=\linewidth, poster, showcontrols]{\includegraphics[width=\linewidth]{matlabLogo.png}}{vid2.mov}
+\begin{itemize}
+    \item $\sigma = 5.5\times 10^{-5}$, $p=8.9$, $\gamma = 5.5\times 10^{-11.25}$
+\end{itemize}
+\end{frame}
+\begin{frame}{Run \#3: More Noise, modified parameters}
+    \begin{figure}[h!]
+  \centering
+  \begin{overprint}
+  \includegraphics<1>[width=\linewidth]{ex3original.png}
+  \includegraphics<2>[width=\linewidth]{ex3blurred.png}
+  \includegraphics<3>[width=\linewidth]{ex3spd.png}
+    \end{overprint}
+\end{figure}
+\end{frame}
+\begin{frame}{Run \#3: More Noise, modified parameters}
+     \movie[label=test,width=\linewidth, poster, showcontrols]{\includegraphics[width=\linewidth]{matlabLogo.png}}{vid3.mov}
+\begin{itemize}
+    \item $\sigma = 7.9\times 10^{-5}$, $p=7.0$, $\gamma = 5.5\times 10^{-9.55}$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Run \#4: Spine-Dendrite Image}
+    \begin{figure}[h!]
+  \centering
+  \begin{overprint}
+  \includegraphics<1>[width=\linewidth]{ex4original.png}
+  \includegraphics<2>[width=\linewidth]{ex4blurred.png}
+  \includegraphics<3>[width=\linewidth]{ex4spd.png}
+    \end{overprint}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Run \#4: Spine-Dendrite Image}
+    \movie[label=test,width=\linewidth, poster, showcontrols]{\includegraphics[width=\linewidth]{matlabLogo.png}}{vid4.mov}
+\begin{itemize}
+    \item $\sigma = 5.5\times 10^{-5}$, $p=8.9$, $\gamma = 5.5\times 10^{-11.25}$
+\end{itemize}
+\end{frame}
+\begin{frame}{Summary}
+\textbf{Challenges}
+\begin{itemize}
+    \item Choosing parameters for reasonable image segmentation $p$ and $\gamma$
+    \item Choosing the appropriate amount of smoothing without smoothing out important image features
+\end{itemize}
+\vspace{2mm}
+\textbf{To be completed...}
+\begin{itemize}
+    \item Implement the Mumford-Shah functional \cite{doi:10.1002/cpa.3160430805}
+\[
+{\displaystyle E[J,B]=C\int _{D}(I({\vec {x}})-J({\vec {x}}))^{2}\,\mathrm {d} {\vec {x}}+A\int _{D/B}{\vec {\nabla }}J({\vec {x}})\cdot {\vec {\nabla }}J({\vec {x}})\,\mathrm {d} {\vec {x}}+B\int _{B}\ ds}
+\]
+optimizing this functional leads to a criteria for segmenting an image into sub-image regions and Ambrosio-Tortorelli give an algorithm for achieving the minimum and also show the minimum is well-defined.
+    \item Implement on 3d geometries 
+    \item establish concrete relationship between $\gamma$, $p$, and $d$.
+    \item Use convolution to blurr image instead of solving heat equation
+\end{itemize}
+\end{frame}
+\begin{frame}[allowframebreaks]
+\frametitle{References}
+{\tiny
+\setbeamertemplate{bibliography item}[\theenumiv]
+\nocite{*} 
+%\bibliographystyle{amsalpha} 
+\bibliography{references.bib}
+}
+\end{frame}
+
+\end{document}
