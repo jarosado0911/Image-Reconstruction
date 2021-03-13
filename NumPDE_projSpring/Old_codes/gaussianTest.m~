@@ -1,0 +1,60 @@
+function gaussianTest
+
+npts=499;
+[phi0,~,~,x,y]=initial_phi(npts,0);
+dx = x(2)-x(1);
+dy = y(2)-y(1);
+
+[delphiX,delphiY,~,~]=gradPhi(npts,0);
+[u_initial,~,~]=u0(npts);
+
+[X,Y]=meshgrid(x,y);
+
+E=gaussian_filter(phi0,X,Y',.005);
+Ex=gaussian_filter(delphiX,X,Y',.005);
+Ey=gaussian_filter(delphiY,X,Y',.005);
+Eu=gaussian_filter(u_initial,X,Y',.005);
+
+[DxJu, DyJu]=grad(Eu,dx,dy);
+
+normJu=zeros(npts,npts);
+
+for j=1:npts
+    for i=1:npts
+        normJu=
+    end
+end
+
+surf(X,Y,DyJu)
+view(0,90)
+colormap jet
+shading interp
+
+size(Eu)
+
+% figure(1)
+% surf(X,Y,Eu)
+% view(0,90)
+% colormap jet
+% shading interp
+% 
+% figure(2)
+% surf(X,Y,Ex)
+% view(0,90)
+% colormap jet
+% shading interp
+% 
+% figure(3)
+% surf(X,Y,Ey)
+% view(0,90)
+% colormap jet
+% shading interp
+% 
+% figure(4)
+% surf(X,Y,E)
+% view(0,90)
+% colormap jet
+% shading interp
+
+end
+
